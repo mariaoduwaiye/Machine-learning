@@ -1,0 +1,125 @@
+---
+title: "PML"
+author: "oduwaiye maria"
+date: "2019 M01 23"
+output: html_document
+---
+```{r}
+library(caret)
+```
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+```{r}
+library(RColorBrewer)
+library(RGtk2)
+```
+```{r}
+library(rattle)
+```
+```{r}
+library(randomForest)
+```
+```{r}
+library(gbm)
+```
+```{r}
+train_url <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url  <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+
+init_org_training_data <- read.csv(url(train_url))
+init_org_testing_data <- read.csv(url(test_url))
+
+dim(init_org_training_data)
+```
+```{r}
+dim(init_org_testing_data)
+```
+```{r}
+non_zero_var <- nearZeroVar(init_org_training_data)
+
+
+org_training_data <- init_org_training_data[,-non_zero_var]
+org_testing_data <- init_org_testing_data[,-non_zero_var]
+
+dim(org_training_data)
+```
+```{r}
+dim(org_testing_data)
+```
+```{r}
+na_val_col <- sapply(org_training_data, function(x) mean(is.na(x))) > 0.95
+
+org_training_data <- org_training_data[,na_val_col == FALSE]
+org_testing_data <- org_testing_data[,na_val_col == FALSE]
+
+dim(org_training_data)
+```
+```{r}
+dim(org_testing_data)
+```
+```{r}
+org_training_data <- org_training_data[,8:59]
+org_testing_data <- org_testing_data[,8:59]
+
+dim(org_training_data)
+```
+```{r}
+dim(org_testing_data)
+```
+```{r}
+colnames(org_training_data)
+```
+```{r}
+colnames(org_testing_data)
+```
+```{r}
+inTrain <- createDataPartition(org_training_data$classe, p=0.6, list=FALSE)
+training <- org_training_data[inTrain,]
+testing <- org_training_data[-inTrain,]
+
+dim(training)
+```
+```{r}
+dim(testing)
+```
+```{r}
+DT_modfit <- train(classe ~ ., data = training, method="rpart")
+```
+```{r}
+DT_prediction <- predict(DT_modfit, testing)
+confusionMatrix(DT_prediction, testing$classe)
+```
+```{r}
+rpart.plot(DT_modfit$finalModel, roundint=FALSE)
+```
+```{r}
+RF_modfit <- train(classe ~ ., data = training, method = "rf", ntree = 100)
+```
+```{r}
+RF_prediction <- predict(RF_modfit, testing)
+RF_pred_conf <- confusionMatrix(RF_prediction, testing$classe)
+RF_pred_conf
+```
+```{r}
+plot(RF_pred_conf$table, col = RF_pred_conf$byClass, 
+     main = paste("Random Forest - Accuracy Level =",
+                  round(RF_pred_conf$overall['Accuracy'], 4)))
+```
+```{r}
+GBM_modfit <- train(classe ~ ., data = training, method = "gbm", verbose = FALSE)
+GBM_modfit$finalModel
+```
+```{r}
+GBM_prediction <- predict(GBM_modfit, testing)
+
+GBM_pred_conf <- confusionMatrix(GBM_prediction, testing$classe)
+GBM_pred_conf
+```
+   
+```{r}
+  Final_RF_prediction <- predict(RF_modfit, org_testing_data )
+Final_RF_prediction
+```
