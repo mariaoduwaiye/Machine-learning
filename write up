@@ -1,0 +1,104 @@
+# Machine-learning
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>Background and Data</h1>
+<p>Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+In this project, I will use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+</p>
+
+<p>The goal of this project is to predict the manner in which they did the exercise. This information is encrypted in the "classe" variable in the training set. 
+The following sections explain how I built the model, how I used cross validation, what the expected out of sample error is, and why I made the these choices. 
+
+This prediction model is further used to predict 20 different test cases.
+
+
+I hereby present a write-up document for the peer graded assignment for the Practical Machine Learning course hosted on Coursera.</p>
+
+<p>The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+</p>
+
+<p>The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</p>
+
+<h1>Data Extraction and Preliminary cleanup</h1>
+<p>To begin with, we first download the data and store in our machine using the steps below:</p>
+<p> > url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+ </p>
+<p> > download.file(url, destfile = "training.csv")
+ </p>
+<p> > url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+ </p>
+<p> > download.file(url, destfile = "testing.csv")
+ </p>
+<p> > training <- read.csv("training.csv") </p>
+<p> > testing <- read.csv("testing.csv") </p>
+
+<p>Let us take a look at the training data set to understand its various components and the corresponding values:</p>
+<img src= "C:\Users\esha\Desktop\Courseera\Practical Machine Learning\Week 4\InitialData.PNG">
+<p>We can see that the data contains several NA, garbage strings such as '#DIV/0!' and many empty strings. So we first replace all these miscelleneous values with NA in the data.</p>
+<p> Cleaning up training and testing data as follows:</p>
+<p> > training_clean <- read.csv("training.csv", na.strings = c("NA", "#DIV/0!", "")) <\p>
+<p> > testing_clean <- read.csv("testing.csv",  na.strings = c("NA", "#DIV/0!", ""))  <\p>
+
+<p> The first 6 columns contains various refernce information which will not contribute much to our prediction methodology. <\p>
+<p> So we remove this information from the training and testing dataset. We also need to remove those columns in which most of the values are NA. </p>
+<p> training_clean <- training_clean[, 7:160] <\p>
+<p> testing_clean  <- testing_clean[, 7:160]  <\p>
+<p> valid_data  <- apply(!is.na(training_clean), 2, sum) > 19621  # which is the number of observations <\p>
+<p> training_clean <- training_clean[, valid_data] </p>
+<p> testing_clean <- testing_clean[, valid_data] </p>
+
+<p> Our next step is to split the clean training dataset into two subsets for cross-validation, one will be used for training and another for evaluating the model we build. </p>
+<p> In this case, I have randomly split 75% of the clean training data for purely training purpose and another 25% of validation. </p>
+<p> library(caret) </p>
+<p> inTrain <- createDataPartition(y=training_clean$classe, p=0.75, list=FALSE) </p>
+<p> train1  <- training_clean[inTrain,] </p>
+<p> train2  <- training_clean[-inTrain,] </p>
+
+<p> The next step is to remove columns having zero covariates as don't contribute to the prediction model. </p>
+<p> nzv <- nearZeroVar(train1) </p>
+<p> if(length(nzv) > 0) { </p>
+<p>  train1 <- train1[, -nzv] </p>
+<p>  train2 <- train2[, -nzv] </p>
+} </p>
+
+We are now ready to build a model to predict the classe variable.
+
+<h1>Modeling</h1>
+<p> We are now ready to predict the classe variable based on the other variables in the dataset. </p>
+<p> We first use the random forest algorithm to build the model and check the accuracy of the model for the validation dataset. </p>
+<p> myModel <- train(classe ~ .
+                , data = train1
+                , method = "rf") </p>
+<p> We then predict the output of this model for the validation dataset as follows: </p>
+<p> predTest <- predict(myModel, newdata=train2) </p>
+<p> confusionMatrix(predTest, train2$classe) </p>
+<p> The output of the confusion matrix reveals the accuracy as follows: </p>
+<img src= "C:\Users\esha\Desktop\Courseera\Practical Machine Learning\Week 4\ConfusionMatrix_RandomForest.PNG">
+
+<p> This model has an accuracy of 99.71%. </p>
+
+<p> Out of sample error = 100% - Accuracy = 0.29% </p>
+
+<h1>Prediction on testing sample: Coursera Quiz</h1>
+<p> Now we use the model to predict the outcome on the test data. </p>
+<p> predictions <- predict(myModel, newdata=testing_clean) </p>
+<p> testing$classe <- predictions </p>
+<p> > testing$classe </p>
+<p> [1] B A B A A E D B A A B C B A E E A B B B </p>
+<p> Levels: A B C D E </p>
+
+
+<h1>Conclusion</h1>
+<p>This assignment predicts the classe variable in the testing set based on the other covariates available in the data set. I have used the random forest algorithm which yields 99% accuracy.</p>
+<p> As further enhancements, we can use PCA to find out the most significant features and recompute the prediction algorithm. </p>
+</body>
+</html>
+© 2019 GitHub, Inc.
